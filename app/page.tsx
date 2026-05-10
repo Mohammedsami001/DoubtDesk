@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SignInButton, SignUpButton, SignedIn, SignedOut, useClerk } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, SignedIn, SignedOut, useClerk, UserButton } from "@clerk/nextjs";
 import { Sparkles, FileText, Map, MessageCircle, FileEdit, ArrowRight, Mail, Linkedin, Github } from "lucide-react";
 import Link from "next/link";
 import {
@@ -51,12 +51,22 @@ export default function Home() {
               </SignUpButton>
             </SignedOut>
             <SignedIn>
-              <button
-                onClick={() => setShowSignOutDialog(true)}
-                className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl text-sm font-semibold border border-red-500/20 transition-colors"
-              >
-                Logout
-              </button>
+              <div className="flex items-center gap-4">
+                <Link href="/rooms" className="hidden sm:block px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                  Classrooms
+                </Link>
+                <Link href="/profile" className="hidden sm:block px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                  Profile
+                </Link>
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: "w-10 h-10 border border-white/20 shadow-sm"
+                    }
+                  }}
+                />
+              </div>
             </SignedIn>
           </div>
         </div>
