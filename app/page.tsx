@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SignInButton, SignUpButton, SignedIn, SignedOut, useClerk, UserButton } from "@clerk/nextjs";
-import { Sparkles, FileText, Map, MessageCircle, FileEdit, ArrowRight, Mail, Linkedin, Github } from "lucide-react";
+import { FileText, Map, MessageCircle, FileEdit, ArrowRight, Mail, Linkedin, Github } from "lucide-react";
 import Link from "next/link";
 import {
   AlertDialog,
@@ -99,21 +99,21 @@ export default function Home() {
         <section className="px-6 pb-12 relative z-10 pt-3 md:pt-6">
           <div className="pointer-events-none absolute left-1/2 top-6 -z-10 h-80 w-[min(72rem,90vw)] -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.18),transparent_68%)] blur-3xl" />
           <div className="max-w-7xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-500/10 text-blue-400 rounded-full text-sm font-medium mb-6 border border-blue-500/20 animate-fade-in backdrop-blur-md">
-              <Sparkles className="w-4 h-4" />
-              AI-Powered Classroom Collaboration
-            </div>
-
             <h2 className="text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.1] mb-6">
               Empower Your Learning with <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 drop-shadow-[0_0_14px_rgba(59,130,246,0.18)]">
                 Collaborative AI.
               </span>
             </h2>
 
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed">
-              DoubtDesk is your AI-powered classroom companion. Get instant doubt solving, detailed teacher analytics, and participate in community boards for a smarter learning experience.
-            </p>
+            <div className="max-w-2xl mx-auto mb-12">
+              <div className="mb-3 text-[11px] font-semibold tracking-[0.32em] text-blue-300/70 uppercase">
+                Collaborative classrooms
+              </div>
+              <p className="text-xl text-slate-400 leading-relaxed">
+                Built for collaborative classrooms, instant doubt solving, and smarter learning.
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
               <SignedIn>
