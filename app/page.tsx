@@ -102,7 +102,7 @@ export default function Home() {
           <div className="hidden sm:flex items-center gap-3">
             <a
               href="#features"
-              className="px-4 py-2 text-sm font-semibold text-slate-400 transition-all duration-300 hover:text-[#AABFFF] hover:drop-shadow-[0_0_8px_rgba(170,191,255,0.2)]"
+              className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 transition-all duration-300 hover:text-blue-600 dark:hover:text-[#AABFFF] hover:drop-shadow-[0_0_8px_rgba(170,191,255,0.2)]"
             >
               Features
             </a>
@@ -112,7 +112,7 @@ export default function Home() {
             <ThemeToggle />
             <SignedOut>
               <Link href="/sign-in">
-                <button className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-semibold border border-white/10 transition-all hover:shadow-[0_0_16px_rgba(255,255,255,0.08)]">
+                <button className="px-5 py-2.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-900 dark:text-white rounded-xl text-sm font-semibold border border-slate-200 dark:border-white/10 transition-all hover:shadow-[0_0_16px_rgba(255,255,255,0.08)]">
                   Sign In
                 </button>
               </Link>
@@ -125,10 +125,10 @@ export default function Home() {
             </SignedOut>
             <SignedIn>
               <div className="flex items-center gap-4">
-                <Link href="/rooms" className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                <Link href="/rooms" className="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
                   Classrooms
                 </Link>
-                <Link href="/profile" className="px-4 py-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors">
+                <Link href="/profile" className="px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
                   Profile
                 </Link>
                 <UserButton
@@ -147,15 +147,15 @@ export default function Home() {
 
       {/* Logout Confirmation Dialog */}
       <AlertDialog open={showSignOutDialog} onOpenChange={setShowSignOutDialog}>
-        <AlertDialogContent className="bg-slate-900 border-white/10 text-white">
+        <AlertDialogContent className="bg-white dark:bg-slate-900 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-400">
+            <AlertDialogDescription className="text-slate-600 dark:text-slate-400">
               You will need to log in again to access your classroom insights and doubt-solving history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="bg-white/5 border-white/10 text-white hover:bg-white/10">Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="bg-slate-100 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-white/10">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleSignOut}
               className="bg-red-600 hover:bg-red-700 text-white border-none"
@@ -179,25 +179,25 @@ export default function Home() {
             hoverTrailAmount={5}
             className="opacity-90"
           />
-          <div className="absolute inset-0 bg-[#020617]/36" />
+          <div className="absolute inset-0 bg-slate-50/36 dark:bg-[#020617]/36" />
         </div>
         <section className="px-6 pb-12 relative z-10 pt-3 md:pt-6">
           <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-12 xl:gap-16 items-start">
             <div className="text-left">
-              <h2 className="max-w-[12ch] text-4xl sm:text-5xl lg:text-6xl xl:text-[4.2rem] font-black text-[#F2F5FF] tracking-tight leading-[1.04] mb-6">
+              <h2 className="max-w-[12ch] text-4xl sm:text-5xl lg:text-6xl xl:text-[4.2rem] font-black text-slate-900 dark:text-[#F2F5FF] tracking-tight leading-[1.04] mb-6">
                 Empower <br />
                 Your Learning <br />
                 with{' '}
-                <span className={`${staatliches.className} uppercase tracking-[0.08em] text-[#8BB8FF] drop-shadow-[0_0_10px_rgba(120,184,255,0.56)]`}>
+                <span className={`${staatliches.className} uppercase tracking-[0.08em] text-blue-600 dark:text-[#8BB8FF] drop-shadow-[0_0_10px_rgba(120,184,255,0.56)]`}>
                   Collaborative AI.
                 </span>
               </h2>
 
               <div className="max-w-2xl mb-10">
-                <div className={`${staatliches.className} mb-3 text-sm tracking-[0.16em] text-[#AABFFF]/80 uppercase`}>
+                <div className={`${staatliches.className} mb-3 text-sm tracking-[0.16em] text-blue-700 dark:text-[#AABFFF]/80 uppercase`}>
                   Collaborative classrooms
                 </div>
-                <p className="text-xl text-slate-300/90 leading-relaxed">
+                <p className="text-xl text-slate-700 dark:text-slate-300/90 leading-relaxed">
                   Built for collaborative classrooms, instant doubt solving, and smarter learning.
                 </p>
               </div>
@@ -251,13 +251,13 @@ export default function Home() {
           <div className="absolute inset-x-0 top-10 h-40 bg-gradient-to-r from-blue-500/10 via-transparent to-purple-500/10 blur-3xl pointer-events-none" />
           <div className="max-w-7xl mx-auto">
             <div className="max-w-3xl mx-auto text-center">
-              <div className={`${staatliches.className} mb-4 text-sm tracking-[0.16em] text-[#AABFFF]/70 uppercase`}>
+              <div className={`${staatliches.className} mb-4 text-sm tracking-[0.16em] text-blue-700 dark:text-[#AABFFF]/70 uppercase`}>
                 Features
               </div>
-              <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F2F5FF] tracking-tight leading-tight">
+              <h3 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 dark:text-[#F2F5FF] tracking-tight leading-tight">
                 Everything your classroom needs to solve doubts, stay aligned, and move faster.
               </h3>
-              <p className="mt-5 text-base sm:text-lg text-slate-300/85 leading-8">
+              <p className="mt-5 text-base sm:text-lg text-slate-700 dark:text-slate-300/85 leading-8">
                 Built for modern study teams, DoubtDesk blends AI-powered doubt solving, shared resources, and smart classroom flows into a single polished platform.
               </p>
             </div>
@@ -268,15 +268,15 @@ export default function Home() {
                 return (
                   <div
                     key={feature.title}
-                    className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.03] p-6 shadow-2xl shadow-slate-950/10 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/[0.06]"
+                    className="group relative overflow-hidden rounded-[2rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.03] p-6 shadow-2xl shadow-slate-950/10 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
                   >
-                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-[#5E8CFF]/10 text-[#8BB8FF] shadow-[0_0_18px_rgba(94,140,255,0.18)] transition-colors duration-300 group-hover:bg-[#5E8CFF]/15">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-500/10 dark:bg-[#5E8CFF]/10 text-blue-600 dark:text-[#8BB8FF] shadow-[0_0_18px_rgba(94,140,255,0.18)] transition-colors duration-300 group-hover:bg-blue-500/15 dark:group-hover:bg-[#5E8CFF]/15">
                       <Icon className="h-6 w-6" />
                     </div>
-                    <h4 className="mt-6 text-xl font-semibold text-[#F2F5FF] tracking-tight">
+                    <h4 className="mt-6 text-xl font-semibold text-slate-900 dark:text-[#F2F5FF] tracking-tight">
                       {feature.title}
                     </h4>
-                    <p className="mt-3 text-sm leading-7 text-slate-300/80">
+                    <p className="mt-3 text-sm leading-7 text-slate-700 dark:text-slate-300/80">
                       {feature.description}
                     </p>
                   </div>
@@ -288,11 +288,11 @@ export default function Home() {
       </main>
       {/*Here's Your Previous Footer. I have just commented it in case */}
       {/* Footer
-      <footer className="border-t border-white/5 bg-slate-950/50 py-5">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-slate-500">
+      <footer className="border-t border-slate-200 dark:border-white/5 bg-white/50 dark:bg-slate-950/50 py-5">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6 text-slate-500 dark:text-slate-500">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">D</div>
-            <span className="font-bold text-white">DoubtDesk</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-slate-900 dark:text-white font-bold text-sm">D</div>
+            <span className="font-bold text-slate-900 dark:text-white">DoubtDesk</span>
           </div>
           <p className="text-sm">© 2026 DoubtDesk. Engineered for Excellence.</p>
           <div className="flex items-center gap-6">

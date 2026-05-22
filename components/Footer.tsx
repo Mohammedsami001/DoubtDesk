@@ -76,7 +76,7 @@ export default function Footer() {
                     <div className="max-w-md">
                         <Link href="/" className="inline-flex items-center gap-3 mb-5 group">
 
-                            <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
+                            <div className="w-11 h-11 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center text-slate-900 dark:text-white font-bold text-xl shadow-[0_0_15px_rgba(37,99,235,0.2)] transition-all duration-300 group-hover:scale-110 group-hover:rotate-3">
                                 D
                             </div>
 
