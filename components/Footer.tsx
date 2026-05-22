@@ -21,7 +21,7 @@ export default function Footer() {
             links: [
                 { label: "Privacy Policy", href: "/privacy-policy" },
                 { label: "Terms of Service", href: "/terms-of-service" },
-                { label: "Leaderboard", href: "/leaderboard" },
+                { label: "About", href: "/about" },
                 { label: "Help Center", href: "/help" },
             ],
         },
