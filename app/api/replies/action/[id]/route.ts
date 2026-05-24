@@ -11,18 +11,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     try {
         const { errorResponse, data } = await parseAndValidateRequest(req, updateReplyActionSchema);
         if (errorResponse) return errorResponse;
-        const { action, content, subject, imageUrl, userName, replyId, status, tags = [] } = data;
+        const { content, imageUrl } = data;
         
         const user = await currentUser();
         const email = user?.primaryEmailAddress?.emailAddress;
         const { id } = await params;
-        const replyId = parseInt(id);
+        const parsedReplyId = parseInt(id);
 
-        if (isNaN(replyId)) {
+        if (isNaN(parsedReplyId)) {
             return NextResponse.json({ error: "Invalid data" }, { status: 400 });
         }
 
-        const [reply] = await db.select().from(repliesTable).where(eq(repliesTable.id, replyId)).limit(1);
+        const [reply] = await db.select().from(repliesTable).where(eq(repliesTable.id, parsedReplyId)).limit(1);
         if (!reply) return NextResponse.json({ error: "Reply not found" }, { status: 404 });
 
         let isTeacher = false;
@@ -45,7 +45,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const updated = await db.update(repliesTable)
             .set(updateData)
-            .where(eq(repliesTable.id, replyId))
+            .where(eq(repliesTable.id, parsedReplyId))
             .returning();
 
         return NextResponse.json(updated[0]);
