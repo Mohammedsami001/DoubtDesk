@@ -185,7 +185,7 @@ export const doubtsTable = pgTable("doubts", {
     content: text(),
     imageUrl: text(),
     likes: integer().default(0),
-    isSolved: varchar({ length: 20 }).default("unsolved"), // unsolved, solved
+    isSolved: varchar({ length: 20 }).default("unsolved"), // unsolved | in-progress | solved : see lib/doubtStatus.ts
     solvedReplyId: integer(),                       // ID of the specific reply that solved it
     type: varchar({ length: 20 }).default("community"),    // 'ai', 'community', 'teacher'
     isPinned: boolean().default(false),
