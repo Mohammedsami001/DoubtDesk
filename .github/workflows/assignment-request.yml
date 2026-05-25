@@ -18,6 +18,20 @@ jobs:
           script: |
             const commenter = context.payload.comment.user.login;
             
+            try {
+              const { data: permission } = await github.rest.repos.getCollaboratorPermissionLevel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: commenter
+              });
+              if (['admin', 'write'].includes(permission.permission)) {
+                console.log(`User ${commenter} is a maintainer. Ignoring assignment request logic.`);
+                return;
+              }
+            } catch (e) {
+              console.log("Could not fetch permission level.", e);
+            }
+            
             // Add a label indicating it needs maintainer review
             try {
               await github.rest.issues.addLabels({
