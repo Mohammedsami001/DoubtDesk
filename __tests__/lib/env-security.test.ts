@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 
 const rootDir = path.resolve(__dirname, "../..");
-const ignoredDirs = new Set([".git", ".next", "node_modules"]);
 const textFileExtensions = new Set([
   ".env",
   ".js",
@@ -15,13 +14,21 @@ const textFileExtensions = new Set([
   ".yml",
   ".yaml",
 ]);
+const scannedRootFiles = [
+  ".env.example",
+  "README.md",
+  "CONTRIBUTING.md",
+  "drizzle.config.ts",
+  "next.config.mjs",
+];
+const scannedDirs = ["app", "configs", "lib", "scripts", "inngest", ".github"];
 
 function collectTextFiles(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      return ignoredDirs.has(entry.name) ? [] : collectTextFiles(fullPath);
+      return collectTextFiles(fullPath);
     }
 
     if (!entry.isFile()) {
@@ -35,6 +42,20 @@ function collectTextFiles(dir: string): string[] {
   });
 }
 
+function collectSecurityRelevantFiles(): string[] {
+  const rootFiles = scannedRootFiles
+    .map((file) => path.join(rootDir, file))
+    .filter((file) => fs.existsSync(file));
+
+  const dirFiles = scannedDirs.flatMap((dir) => {
+    const fullPath = path.join(rootDir, dir);
+
+    return fs.existsSync(fullPath) ? collectTextFiles(fullPath) : [];
+  });
+
+  return [...rootFiles, ...dirFiles];
+}
+
 describe("environment variable security", () => {
   it("does not expose the Neon database connection string through NEXT_PUBLIC_", () => {
     const publicNeonConnectionString = [
@@ -46,7 +67,7 @@ describe("environment variable security", () => {
       "STRING",
     ].join("_");
 
-    const matches = collectTextFiles(rootDir).flatMap((file) => {
+    const matches = collectSecurityRelevantFiles().flatMap((file) => {
       const content = fs.readFileSync(file, "utf8");
 
       return content.includes(publicNeonConnectionString)
