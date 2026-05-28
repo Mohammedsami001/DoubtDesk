@@ -27,6 +27,7 @@ interface DoubtRepliesModalProps {
 
 export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChange, isTeacher = false }: DoubtRepliesModalProps) {
     const [replies, setReplies] = useState<Reply[]>([]);
+    const [pendingReplies, setPendingReplies] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [chatText, setChatText] = useState("");
     const [isPosting, setIsPosting] = useState(false);
@@ -66,6 +67,25 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
     }, [isOpen, doubt.id, doubt.userName]);
 
     useEffect(() => {
+        const loadPendingReplies = async () => {
+            const { getPendingReplies } = await import("@/lib/offline/syncQueue");
+            const pending = await getPendingReplies(doubt.id);
+            setPendingReplies(pending);
+        };
+
+        if (isOpen) {
+            loadPendingReplies();
+            window.addEventListener("sync-queue-updated", loadPendingReplies);
+            window.addEventListener("online", loadPendingReplies);
+        }
+
+        return () => {
+            window.removeEventListener("sync-queue-updated", loadPendingReplies);
+            window.removeEventListener("online", loadPendingReplies);
+        };
+    }, [isOpen, doubt.id]);
+
+    useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [replies]);
 
@@ -103,6 +123,43 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
 
         setIsPosting(true);
         try {
+            if (typeof navigator !== "undefined" && !navigator.onLine) {
+                const payload = {
+                    doubtId: doubt.id,
+                    userName,
+                    type,
+                    content,
+                    imageUrl
+                };
+                const { addToQueue } = await import("@/lib/offline/syncQueue");
+                await addToQueue("/api/replies", "POST", payload);
+
+                if ("serviceWorker" in navigator && "SyncManager" in window) {
+                    try {
+                        const reg = await navigator.serviceWorker.ready;
+                        await (reg as any).sync.register("doubtDeskSyncQueue");
+                    } catch (syncErr) {
+                        console.warn("Background sync registration failed:", syncErr);
+                    }
+                }
+
+                toast.success("You are offline. Your reply has been saved and will sync automatically when your connection returns.", {
+                    id: `reply-offline-queued-${type}`,
+                });
+
+                if (type === 'comment') setChatText("");
+                else {
+                    setSolutionContent("");
+                    setSolutionImage("");
+                    setFileName("");
+                    setShowSolutionForm(false);
+                }
+
+                setIsPosting(false);
+                if (onReplyChange) onReplyChange();
+                return;
+            }
+
             const res = await fetch("/api/replies", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -344,12 +401,12 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
         }
     };
 
-    const ReplyBubble = ({ reply }: { reply: Reply }) => {
+    const ReplyBubble = ({ reply }: { reply: any }) => {
         const isMe = reply.userName === userName;
         const isOfficial = doubt.solvedReplyId === reply.id;
 
         return (
-            <div className={`flex flex-col group/msg relative w-full mb-6 ${isMe ? 'items-end' : 'items-start'}`}>
+            <div className={`flex flex-col group/msg relative w-full mb-6 ${isMe ? 'items-end' : 'items-start'} ${reply.isPendingSync ? 'opacity-65 italic' : ''}`}>
                 {/* Message Bubble */}
                 <div className={`relative max-w-[85%] sm:max-w-[75%] rounded-[2rem] p-6 ${
                     reply.type === 'solution'
@@ -380,7 +437,7 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
                                 </button>
                             )}
 
-                            {isMe && !editingId && (
+                            {isMe && !editingId && !reply.isPendingSync && (
                                 <div className="relative">
                                     <button
                                         onClick={() => setMenuOpenId(menuOpenId === reply.id ? null : reply.id)}
@@ -515,24 +572,33 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
                     </div>
 
                     {/* Vote Action */}
-                    <div className="mt-4 flex items-center justify-end">
-                        <button
-                            onClick={() => handleVote(reply.id)}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95 group/vote ${ reply.hasUpvoted ? "bg-blue-600/20 text-blue-400 border-blue-500/30 shadow-lg shadow-blue-500/10" : "bg-white/5 text-slate-500 border-white/5 hover:text-white hover:bg-white/10" }`}
-                        >
-                            <ThumbsUp
-                                className={`w-3.5 h-3.5 ${ reply.hasUpvoted ? 'fill-blue-400' : 'group-hover/vote:scale-110 transition-transform' }`}
-                            />
-                            <span className="text-[10px] font-black uppercase tracking-widest">
-                                {reply.upvotes || 0} <span className="hidden sm:inline ml-1 opacity-60">Helpful</span>
-                            </span>
-                        </button>
-                    </div>
+                    {!reply.isPendingSync && (
+                        <div className="mt-4 flex items-center justify-end">
+                            <button
+                                onClick={() => handleVote(reply.id)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all active:scale-95 group/vote ${ reply.hasUpvoted ? "bg-blue-600/20 text-blue-400 border-blue-500/30 shadow-lg shadow-blue-500/10" : "bg-white/5 text-slate-500 border-white/5 hover:text-white hover:bg-white/10" }`}
+                            >
+                                <ThumbsUp
+                                    className={`w-3.5 h-3.5 ${ reply.hasUpvoted ? 'fill-blue-400' : 'group-hover/vote:scale-110 transition-transform' }`}
+                                />
+                                <span className="text-[10px] font-black uppercase tracking-widest">
+                                    {reply.upvotes || 0} <span className="hidden sm:inline ml-1 opacity-60">Helpful</span>
+                                </span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer: Time */}
-                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-2 px-2">
-                    {new Date(reply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-2 px-2 flex items-center gap-1">
+                    {reply.isPendingSync ? (
+                        <>
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            <span>Pending sync</span>
+                        </>
+                    ) : (
+                        new Date(reply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    )}
                 </span>
             </div>
         );
@@ -618,11 +684,12 @@ export default function DoubtRepliesModal({ doubt, isOpen, onClose, onReplyChang
                     ) : (
                         <div className="space-y-6">
                             {(() => {
+                                const allReplies = [...replies, ...pendingReplies];
                                 const filteredReplies = activeTab === 'all'
-                                    ? replies
+                                    ? allReplies
                                     : activeTab === 'chat'
-                                        ? replies.filter(r => r.type === 'comment')
-                                        : replies.filter(r => r.type === 'solution');
+                                        ? allReplies.filter(r => r.type === 'comment')
+                                        : allReplies.filter(r => r.type === 'solution');
 
                                 if (filteredReplies.length === 0) {
                                     return (

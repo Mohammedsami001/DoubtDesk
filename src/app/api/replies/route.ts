@@ -146,6 +146,7 @@ export async function POST(req: Request) {
             type,
             content: content || null,
             imageUrl: imageUrl || null,
+            createdAt: data.createdAt ? new Date(data.createdAt) : undefined
         }).returning();
 
         createReplyNotification({

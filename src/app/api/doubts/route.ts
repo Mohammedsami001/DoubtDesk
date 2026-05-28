@@ -266,7 +266,8 @@ const doubtType = type ?? 'community';
             content,
             imageUrl,
             classroomId: parsedClassroomId,
-            type
+            type,
+            createdAt: data.createdAt ? new Date(data.createdAt) : undefined
         }).returning();
 
         if (parsedClassroomId) {

@@ -239,6 +239,34 @@ export default function AskDoubt({ defaultSubject = "", isOpen, onClose, onSucce
 
         setIsSubmitting(true);
         try {
+            if (typeof navigator !== "undefined" && !navigator.onLine) {
+                if (doubtToEdit) {
+                    toast.error("You cannot edit doubts while offline.");
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const payload = { userName, subject, content, imageUrl, classroomId, type, tags };
+                const { addToQueue } = await import("@/lib/offline/syncQueue");
+                await addToQueue("/api/doubts", "POST", payload);
+
+                if ("serviceWorker" in navigator && "SyncManager" in window) {
+                    try {
+                        const reg = await navigator.serviceWorker.ready;
+                        await (reg as any).sync.register("doubtDeskSyncQueue");
+                    } catch (syncErr) {
+                        console.warn("Background sync registration failed:", syncErr);
+                    }
+                }
+
+                toast.success("You are offline. Your doubt has been saved and will sync automatically when your connection returns.", {
+                    id: "doubt-offline-queued",
+                });
+                onSuccess();
+                setIsSubmitting(false);
+                return;
+            }
+
             const url = doubtToEdit ? `/api/doubts/action/${doubtToEdit.id}` : "/api/doubts";
             const method = doubtToEdit ? "PATCH" : "POST";
             const body = doubtToEdit

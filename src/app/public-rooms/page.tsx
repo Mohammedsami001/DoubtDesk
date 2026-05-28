@@ -27,6 +27,7 @@ export default function PublicRoomsPage() {
 
     const [searchVal, setSearchVal] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [pendingDoubts, setPendingDoubts] = useState<any[]>([]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -34,6 +35,23 @@ export default function PublicRoomsPage() {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchVal]);
+
+    useEffect(() => {
+        const loadPendingDoubts = async () => {
+            const { getPendingDoubts } = await import("@/lib/offline/syncQueue");
+            const pending = await getPendingDoubts();
+            setPendingDoubts(pending);
+        };
+
+        loadPendingDoubts();
+
+        window.addEventListener("sync-queue-updated", loadPendingDoubts);
+        window.addEventListener("online", loadPendingDoubts);
+        return () => {
+            window.removeEventListener("sync-queue-updated", loadPendingDoubts);
+            window.removeEventListener("online", loadPendingDoubts);
+        };
+    }, []);
 
     const sort = (searchParams.get("sort") as DoubtSortValue) || "newest";
 
@@ -96,7 +114,8 @@ export default function PublicRoomsPage() {
     });
 
     const doubts = data ? [].concat(...data) : [];
-    const filteredDoubts = (doubts as any[]).filter((d) => {
+    const allDoubts = [...pendingDoubts, ...doubts];
+    const filteredDoubts = (allDoubts as any[]).filter((d) => {
         if (statusFilter === 'all') return true;
         if (statusFilter === 'unsolved') return d.isSolved === 'unsolved' || !d.isSolved;
         if (statusFilter === 'in-progress') return d.isSolved === 'in-progress';
