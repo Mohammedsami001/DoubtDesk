@@ -212,6 +212,7 @@ export async function POST(req: Request) {
         if (errorResponse) return errorResponse;
         
         const { userName, subject, content, imageUrl, classroomId, type, tags } = data;
+const doubtType = type ?? 'community';
         const parsedClassroomId = classroomId ? parseInt(classroomId.toString()) : null;
 
         const user = await currentUser();
@@ -262,7 +263,7 @@ export async function POST(req: Request) {
                 subject,
                 authorEmail: email,
                 authorName: userName,
-                doubtType: type,
+                doubtType: doubtType,
             }).catch((notificationErr) => {
                 console.error("Failed to create classroom doubt notifications:", notificationErr);
             });

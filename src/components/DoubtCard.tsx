@@ -41,9 +41,9 @@ export default function DoubtCard({ doubt, onUpdate, onViewAISolution, role, ope
     }, [doubt.userName]);
 
     useEffect(() => {
-        const deepLinkedDoubtId = Number(searchParams.get("doubtId") || "") || null;
+        const deepLinkedDoubtId = searchParams ? (Number(searchParams.get("doubtId") || "") || null) : null;
         const shouldAutoOpen = openRepliesOnMount || deepLinkedDoubtId === doubt.id;
-        const autoOpenKey = shouldAutoOpen ? `${doubt.id}:${searchParams.get("doubtId") || ""}` : null;
+        const autoOpenKey = shouldAutoOpen ? `${doubt.id}:${searchParams ? (searchParams.get("doubtId") || "") : ""}` : null;
 
         if (shouldAutoOpen && autoOpenKey !== lastAutoOpenedThread.current) {
             setIsRepliesOpen(true);
