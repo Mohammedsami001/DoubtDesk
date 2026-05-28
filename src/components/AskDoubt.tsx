@@ -3,8 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Loader2, Upload, File, Eye, EyeOff, Bold, Italic, Code, List, Tags, Sparkles, FileText, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import useSWR from "swr";
 import MarkdownRenderer from "./MarkdownRenderer";
 import { OFFLINE_DOUBT_QUEUED } from "@/lib/copy-constants";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 interface AskDoubtProps {
     defaultSubject?: string;
@@ -87,6 +90,17 @@ export default function AskDoubt({ defaultSubject = "", isOpen, onClose, onSucce
     const [userName, setUserName] = useState("");
     const [tags, setTags] = useState<string[]>(doubtToEdit?.tags?.map((tag: any) => tag.name) || []);
     const [tagDraft, setTagDraft] = useState("");
+
+    const { data: suggestedTagsData } = useSWR<any[]>(
+        isOpen && subject
+            ? `/api/tags?subject=${encodeURIComponent(subject)}&classroomId=${classroomId || ""}`
+            : null,
+        fetcher
+    );
+
+    const suggestedTags = (suggestedTagsData || []).filter(
+        (rec) => !tags.some((t) => t.toLowerCase() === rec.name.toLowerCase())
+    );
     const [subjectWasEdited, setSubjectWasEdited] = useState(false);
     const [suggestedSubject, setSuggestedSubject] = useState("");
     const [isDragging, setIsDragging] = useState(false);
@@ -469,6 +483,21 @@ export default function AskDoubt({ defaultSubject = "", isOpen, onClose, onSucce
                                 Add
                             </button>
                         </div>
+                        {suggestedTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2 items-center px-1 py-1">
+                                <span className="text-[9px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-widest">Recommended:</span>
+                                {suggestedTags.map((tag) => (
+                                    <button
+                                        type="button"
+                                        key={tag.id}
+                                        onClick={() => addTag(tag.name)}
+                                        className="px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 hover:border-blue-500/40 text-blue-400 hover:text-blue-300 text-[10px] font-semibold rounded-full transition-all duration-300"
+                                    >
+                                        + {tag.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         {tags.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                                 {tags.map((tag) => (
