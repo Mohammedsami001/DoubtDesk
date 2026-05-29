@@ -215,9 +215,9 @@ export const repliesTable = pgTable("replies", {
     userEmail: varchar("user_email", { length: 255 }),
     type: varchar("type", { length: 20 }).notNull(),
     content: text("content"),
-    imageUrl: text("imageUrl"),
+    imageUrl: text("image_url"),
     upvotes: integer("upvotes").default(0).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
     doubtIdIndex: index("doubtId_idx").on(table.doubtId),
     doubtIdFk: foreignKey({
