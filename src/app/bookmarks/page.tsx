@@ -35,10 +35,10 @@ export default function BookmarksPage() {
   return (
     <>
       <SignedIn>
-        <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 p-4 md:p-8 relative overflow-hidden transition-colors duration-500">
+        <div className="p-4 md:p-8 relative overflow-hidden text-slate-900 dark:text-zinc-100 bg-white dark:bg-black min-h-screen transition-colors duration-500">
           <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-500/10 dark:from-purple-500/5 blur-[120px] rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" />
 
-          <div className="max-w-5xl mx-auto space-y-10 relative z-10 pb-16">
+          <div className="max-w-7xl mx-auto relative z-10 space-y-10 pb-16">
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-slate-100 dark:border-zinc-900/60">
               <div className="space-y-2">
                 <button
