@@ -210,6 +210,7 @@ export interface Doubt {
     solvedReplyId?: number | null;
     type: "ai" | "community" | "teacher";
     isPinned: boolean | null;
+    isPendingSync?: boolean;
     createdAt: Date | string;
 }
 
