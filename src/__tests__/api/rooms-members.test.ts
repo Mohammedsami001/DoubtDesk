@@ -16,6 +16,8 @@ const createQueryMock = (data: any) => {
     const chain: any = {
         from: () => chain,
         where: () => chain,
+        limit: () => chain,
+        offset: () => chain,
         then: (resolve: any) => Promise.resolve(resolve(data)),
     };
 
@@ -67,6 +69,7 @@ describe('Room Members API Endpoint', () => {
         checkUserBlockMock.mockResolvedValue({ isBlocked: false });
         selectResultQueue.push(
             [{ id: 1, userEmail: 'student@example.com', role: 'student', classroomId: 1 }],
+            [{ count: 2 }],
             [
                 {
                     id: 1,
@@ -87,7 +90,7 @@ describe('Room Members API Endpoint', () => {
         const json = await res.json();
 
         expect(res.status).toBe(200);
-        expect(json).toEqual([
+        expect(json.members).toEqual([
             {
                 displayName: 'Student_1',
                 role: 'student',
@@ -110,6 +113,7 @@ describe('Room Members API Endpoint', () => {
         checkUserBlockMock.mockResolvedValue({ isBlocked: false });
         selectResultQueue.push(
             [{ id: 1, userEmail: 'teacher@example.com', role: 'teacher', classroomId: 1 }],
+            [{ count: 2 }],
             [
                 {
                     id: 1,
@@ -130,7 +134,7 @@ describe('Room Members API Endpoint', () => {
         const json = await res.json();
 
         expect(res.status).toBe(200);
-        expect(json).toEqual([
+        expect(json.members).toEqual([
             {
                 userEmail: 'teacher@example.com',
                 role: 'teacher',

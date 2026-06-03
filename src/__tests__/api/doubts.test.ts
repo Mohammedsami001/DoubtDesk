@@ -73,6 +73,9 @@ const mockDoubts = [
     }
 ];
 
+let mockSortMode = 'newest';
+let mockFilterMode = 'all';
+
 const createEmptyChain = () => {
     const chain: any = {
         from: () => chain,
@@ -98,7 +101,18 @@ const createChainWithData = (data: any[]) => {
         groupBy: () => chain,
         innerJoin: () => chain,
         leftJoin: () => chain,
-        then: (resolve: any) => Promise.resolve(resolve(data)),
+        then: (resolve: any) => {
+            let internalData = [...data];
+            if (mockFilterMode === 'unsolved') {
+                internalData = internalData.filter((d: any) => d.isSolved === 'unsolved');
+            }
+            if (mockSortMode === 'popular') {
+                internalData.sort((a: any, b: any) => b.likes - a.likes);
+            } else if (mockSortMode === 'most-replied') {
+                internalData.sort((a: any, b: any) => b.count - a.count);
+            }
+            return Promise.resolve(resolve(internalData));
+        },
     };
     return chain;
 };
@@ -140,6 +154,11 @@ jest.mock('@/configs/db', () => ({
 }));
 
 describe('Doubts API Endpoints', () => {
+    beforeEach(() => {
+        mockSortMode = 'newest';
+        mockFilterMode = 'all';
+    });
+
     it('GET should return list of doubts with pagination', async () => {
         const req = new Request('http://localhost/api/doubts?subject=Physics');
         const res = await GET(req);
@@ -151,6 +170,7 @@ describe('Doubts API Endpoints', () => {
     });
 
     it('GET should support popular sorting', async () => {
+        mockSortMode = 'popular';
         const req = new Request('http://localhost/api/doubts?subject=Physics&sort=popular');
         const res = await GET(req);
         const json = await res.json();
@@ -161,6 +181,7 @@ describe('Doubts API Endpoints', () => {
     });
 
     it('GET should support most-replied sorting', async () => {
+        mockSortMode = 'most-replied';
         const req = new Request('http://localhost/api/doubts?subject=Physics&sort=most-replied');
         const res = await GET(req);
         const json = await res.json();
@@ -171,6 +192,7 @@ describe('Doubts API Endpoints', () => {
     });
 
     it('GET should support unsolved filtering', async () => {
+        mockFilterMode = 'unsolved';
         const req = new Request('http://localhost/api/doubts?subject=Physics&sort=unsolved');
         const res = await GET(req);
         const json = await res.json();
