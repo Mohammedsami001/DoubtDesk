@@ -35,7 +35,9 @@ describe("AI Solver Service", () => {
                 where: jest.fn().mockResolvedValue([]),
                 insert: jest.fn().mockReturnThis(),
                 values: jest.fn().mockReturnThis(),
-                returning: jest.fn().mockResolvedValue([{ id: 1 }])
+                returning: jest.fn().mockResolvedValue([{ id: 1 }]),
+                update: jest.fn().mockReturnThis(),
+                set: jest.fn().mockReturnThis()
             } as any;
 
             const params = {

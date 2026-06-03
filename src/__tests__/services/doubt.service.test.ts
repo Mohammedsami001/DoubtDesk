@@ -1,5 +1,9 @@
 import { getDoubts } from "@/services/doubt.service";
 
+jest.mock("@/configs/db", () => ({
+    db: {}
+}));
+
 describe("Doubt Service", () => {
     describe("getDoubts", () => {
         it("returns a list of doubts", async () => {
