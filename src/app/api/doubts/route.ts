@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/configs/db";
 import { 
     bookmarksTable, 
@@ -7,8 +6,6 @@ import {
     doubtsTable, 
     likesTable, 
     repliesTable, 
-    membershipsTable, 
-    classroomsTable, 
     tagsTable 
 } from "@/configs/schema";
 import { categorizeDoubt } from "@/lib/ai/categorizer";
@@ -20,6 +17,11 @@ import { parseAndValidateRequest } from "@/lib/validations/validate";
 import { createDoubtSchema } from "@/lib/validations/doubt";
 import { createClassroomDoubtNotifications } from "@/lib/notifications/service";
 import { inngest } from "@/inngest/client"; 
+import {
+    parseOptionalClassroomId,
+    requireAuth,
+    requireMembership,
+} from "@/lib/auth/membership-guard";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -27,27 +29,17 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const userName = searchParams.get("userName");
     const classroomIdStr = searchParams.get("classroomId");
-    const classroomId = classroomIdStr ? parseInt(classroomIdStr, 10) : null;
     const type = searchParams.get("type") || "community";
     const tag = searchParams.get("tag");
     const sort = searchParams.get("sort") || "newest";
     const bookmarked = searchParams.get("bookmarked") === "true";
 
     try {
-        const user = await currentUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        const email = user.primaryEmailAddress?.emailAddress;
-        if (!email) return NextResponse.json({ error: "Email target missing" }, { status: 400 });
-
-        if (classroomId) {
-            const [membership] = await db
-                .select()
-                .from(membershipsTable)
-                .where(and(eq(membershipsTable.userEmail, email), eq(membershipsTable.classroomId, classroomId)));
-            if (!membership) {
-                return NextResponse.json({ error: "Access denied to this classroom" }, { status: 403 });
-            }
-        }
+        const { email } = await requireAuth();
+        const classroomId = parseOptionalClassroomId(classroomIdStr);
+        const membership = classroomId
+            ? await requireMembership(email, classroomId)
+            : null;
 
         const conditions: SQL[] = [];
 
@@ -57,10 +49,8 @@ export async function GET(req: Request) {
             conditions.push(isNull(doubtsTable.classroomId));
         }
 
-        const [room] = classroomId
-            ? await db.select().from(classroomsTable).where(eq(classroomsTable.id, classroomId))
-            : [null];
-        const isTeacher = room && room.teacherEmail === email;
+        const isTeacher =
+            membership?.role === "teacher" || membership?.role === "owner";
 
         if (!isTeacher) {
             const teacherCondition = or(not(eq(doubtsTable.type, "teacher")), eq(doubtsTable.userEmail, email));
@@ -212,25 +202,14 @@ export async function POST(req: Request) {
         
         const { userName, subject, content, imageUrl, classroomId, type, tags } = data;
         const doubtType = type ?? "community";
-        const parsedClassroomId = classroomId ? parseInt(classroomId.toString(), 10) : null;
-
-        const user = await currentUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-        const email = user.primaryEmailAddress?.emailAddress;
-        if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+        const parsedClassroomId = parseOptionalClassroomId(classroomId);
+        const { email } = await requireAuth();
 
         const { isBlocked, errorResponse: blockResponse } = await checkUserBlock(email);
         if (isBlocked) return blockResponse;
 
         if (parsedClassroomId) {
-            const [membership] = await db
-                .select()
-                .from(membershipsTable)
-                .where(and(eq(membershipsTable.userEmail, email), eq(membershipsTable.classroomId, parsedClassroomId)));
-            if (!membership) {
-                return NextResponse.json({ error: "Access denied: You are not a member of this classroom" }, { status: 403 });
-            }
+            await requireMembership(email, parsedClassroomId);
         }
         
         if (content) {

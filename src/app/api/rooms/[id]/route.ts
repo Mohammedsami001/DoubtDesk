@@ -2,31 +2,26 @@ import { NextResponse } from 'next/server';
 import { db } from '@/configs/db';
 import { classroomsTable, membershipsTable } from '@/configs/schema';
 import { eq, and } from 'drizzle-orm';
-import { currentUser } from '@clerk/nextjs/server';
 import { checkUserBlock } from '@/lib/auth-utils';
 import { buildErrorResponse } from '@/lib/error-handler';
+import {
+    parseClassroomId,
+    requireAuth,
+    requireTeacher,
+} from '@/lib/auth/membership-guard';
 
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const user = await currentUser();
-        if (!user || !user.primaryEmailAddress?.emailAddress) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const email = user.primaryEmailAddress.emailAddress;
+        const { email } = await requireAuth();
 
         // 0. Check if user is blocked
         const { isBlocked, errorResponse } = await checkUserBlock(email);
         if (isBlocked) return errorResponse;
         const { id } = await params;
-        const roomId = parseInt(id);
-
-        if (isNaN(roomId)) {
-            return NextResponse.json({ error: 'Invalid room ID' }, { status: 400 });
-        }
+        const roomId = parseClassroomId(id);
 
         // Optimised query: Fetch classroom and membership in a single join
         const [roomData] = await db
@@ -64,33 +59,15 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const user = await currentUser();
-        if (!user || !user.primaryEmailAddress?.emailAddress) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const email = user.primaryEmailAddress.emailAddress;
+        const { email } = await requireAuth();
 
         // 0. Check if user is blocked
         const { isBlocked, errorResponse } = await checkUserBlock(email);
         if (isBlocked) return errorResponse;
 
         const { id } = await params;
-        const roomId = parseInt(id);
-
-        if (isNaN(roomId)) {
-            return NextResponse.json({ error: 'Invalid room ID' }, { status: 400 });
-        }
-
-        // Verify the user is the teacher of this classroom
-        const [classroom] = await db
-            .select()
-            .from(classroomsTable)
-            .where(and(eq(classroomsTable.id, roomId), eq(classroomsTable.teacherEmail, email)));
-
-        if (!classroom) {
-            return NextResponse.json({ error: 'Forbidden: only the teacher can modify this classroom' }, { status: 403 });
-        }
+        const roomId = parseClassroomId(id);
+        await requireTeacher(email, roomId);
 
         const { pedagogyLevel, targetGradeLevel } = await req.json();
 

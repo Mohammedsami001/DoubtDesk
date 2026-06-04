@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import Groq from 'groq-sdk';
-import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/configs/db';
 import { doubtsTable, repliesTable, usersTable, classroomsTable } from '@/configs/schema';
 import { eq } from 'drizzle-orm';
 import { moderateContent, handleModerationViolation } from '@/lib/moderation';
 import { checkPedagogicalDrift } from '@/lib/pedagogy';
+import { buildErrorResponse } from '@/lib/error-handler';
+import {
+    parseOptionalClassroomId,
+    requireAuth,
+    requireMembership,
+} from '@/lib/auth/membership-guard';
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY || 'dummy_key',
@@ -200,30 +205,13 @@ async function callGroqWithFallback(
  */
 export async function POST(req: Request) {
     try {
-        const user = await currentUser();
-
-        if (!user) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+        const { user, email } = await requireAuth();
 
         const fullName =
             user.fullName ||
             (user.firstName && user.lastName
                 ? `${user.firstName} ${user.lastName}`
                 : 'Academic Student');
-
-        const email =
-            user.primaryEmailAddress?.emailAddress;
-
-        if (!email) {
-            return NextResponse.json(
-                { error: 'Email required' },
-                { status: 400 }
-            );
-        }
 
         // 0. Check if user is blocked
         const [dbUser] = await db
@@ -254,6 +242,11 @@ export async function POST(req: Request) {
             classroomId,
             history = [],
         } = await req.json();
+        const parsedClassroomId = parseOptionalClassroomId(classroomId);
+
+        if (parsedClassroomId) {
+            await requireMembership(email, parsedClassroomId);
+        }
 
         // Validate and sanitize history entries before injecting them into the
         // LLM context. Accepting arbitrary objects would let an attacker inject
@@ -283,7 +276,7 @@ export async function POST(req: Request) {
         let targetGradeLevel = 13;
         let pedagogyLevel = "Undergraduate (Freshman)";
 
-        if (classroomId) {
+        if (parsedClassroomId) {
             try {
                 const [classroom] = await db
                     .select({
@@ -291,7 +284,7 @@ export async function POST(req: Request) {
                         targetGradeLevel: classroomsTable.targetGradeLevel,
                     })
                     .from(classroomsTable)
-                    .where(eq(classroomsTable.id, parseInt(classroomId.toString())));
+                    .where(eq(classroomsTable.id, parsedClassroomId));
                 if (classroom) {
                     pedagogyLevel = classroom.pedagogyLevel;
                     targetGradeLevel = classroom.targetGradeLevel;
@@ -342,7 +335,7 @@ export async function POST(req: Request) {
 - Symbols: Wrap all variables and greek letters in math delimiters.
 - Cleanliness: No repeated characters or filler text.`;
 
-        const PEDAGOGY_RULES = classroomId ? `
+        const PEDAGOGY_RULES = parsedClassroomId ? `
 ### PEDAGOGICAL LEVEL TARGET:
 - The target student academic level is: ${pedagogyLevel} (Flesch-Kincaid Grade Level Target: ${targetGradeLevel}).
 - Explain concepts at this specific complexity. Do NOT use terms or mathematical proofs beyond this grade level. Avoid oversimplifying unless required.` : '';
@@ -514,11 +507,7 @@ ${prompt ? `Additional context from student: ${prompt}` : ''}`;
                             prompt || 'Visual Inquiry',
                         imageUrl:
                             imageBase64?.slice(0, 500),
-                        classroomId: classroomId
-                            ? parseInt(
-                                  classroomId.toString()
-                              )
-                            : null,
+                        classroomId: parsedClassroomId,
                         type: 'ai',
                         isSolved: 'solved',
                     })
@@ -576,13 +565,7 @@ ${prompt ? `Additional context from student: ${prompt}` : ''}`;
             error
         );
 
-        return NextResponse.json(
-            {
-                error: error instanceof Error ?
-                    error.message :
-                    'The AI service is currently overloaded or experiencing issues. Please try again in 30 seconds.',
-            },
-            { status: 500 }
-        );
+        const { status, body } = buildErrorResponse(error);
+        return NextResponse.json(body, { status });
     }
 }
