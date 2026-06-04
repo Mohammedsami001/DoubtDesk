@@ -57,7 +57,7 @@ describe('Room Members API Endpoint', () => {
         const json = await res.json();
 
         expect(res.status).toBe(403);
-        expect(json.error).toBe('Access denied');
+        expect(json.error).toBe('Access denied to this classroom');
     });
 
     it('does not expose member emails to student requesters', async () => {

@@ -8,15 +8,23 @@ jest.mock('@clerk/nextjs/server', () => ({
     }))
 }));
 
+const selectResultsQueue: any[] = [];
+
+const createQueryMock = (data: any[]) => {
+    const query: any = {
+        from: () => query,
+        where: () => query,
+        limit: () => Promise.resolve(data),
+        then: (resolve: any) => Promise.resolve(resolve(data)),
+    };
+    return query;
+};
+
 jest.mock('@/configs/db', () => ({
     db: {
-        select: jest.fn().mockImplementation(() => ({
-            from: jest.fn().mockImplementation(() => ({
-                where: jest.fn().mockImplementation(async () => ([{
-                    blockedUntil: null
-                }]))
-            }))
-        })),
+        select: jest.fn().mockImplementation(() =>
+            createQueryMock(selectResultsQueue.shift() ?? [{ blockedUntil: null }])
+        ),
         insert: jest.fn().mockImplementation(() => ({
             values: jest.fn().mockImplementation(() => ({
                 returning: jest.fn().mockImplementation(async () => ([{
@@ -59,6 +67,10 @@ jest.mock('groq-sdk', () => {
 describe('Ask AI API Endpoint', () => {
     const originalFetch = global.fetch;
 
+    beforeEach(() => {
+        selectResultsQueue.length = 0;
+    });
+
     afterEach(() => {
         global.fetch = originalFetch;
     });
@@ -87,5 +99,24 @@ describe('Ask AI API Endpoint', () => {
         expect(res.status).toBe(200);
         expect(json.subject).toBe('Physics');
         expect(json.reply).toContain('Light travels at approximately');
+    });
+
+    it('rejects classroom-scoped requests from non-members', async () => {
+        selectResultsQueue.push([{ blockedUntil: null }], []);
+
+        const req = new Request('http://localhost/api/ask-ai', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: 'What is the speed of light?',
+                classroomId: 7,
+            })
+        });
+
+        const res = await POST(req);
+        const json = await res.json();
+
+        expect(res.status).toBe(403);
+        expect(json.error).toBe('Access denied to this classroom');
     });
 });

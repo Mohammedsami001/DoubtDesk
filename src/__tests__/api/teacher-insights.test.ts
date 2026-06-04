@@ -79,7 +79,7 @@ describe('Teacher Insights API Endpoint', () => {
         const json = await res.json();
 
         expect(res.status).toBe(403);
-        expect(json.error).toBe('Forbidden: not the teacher of this classroom');
+        expect(json.error).toBe('Access denied to this classroom');
     });
 
     it('returns classroom-scoped insights for the teacher', async () => {
@@ -88,7 +88,7 @@ describe('Teacher Insights API Endpoint', () => {
         });
 
         selectResultsQueue.push(
-            [{ id: 7 }],
+            [{ role: 'teacher' }],
             [
                 { topic: 'Loops', subject: 'Programming', count: 4 },
                 { topic: 'Fractions', subject: 'Math', count: 2 },
