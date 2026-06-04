@@ -6,7 +6,11 @@ import { eq } from 'drizzle-orm';
 import { moderateContent, handleModerationViolation } from '@/lib/moderation';
 import { checkPedagogicalDrift } from '@/lib/pedagogy';
 import { buildErrorResponse } from '@/lib/error-handler';
-import { requireAuth, requireMembership } from '@/lib/auth/membership-guard';
+import {
+    parseClassroomId,
+    requireAuth,
+    requireMembership,
+} from '@/lib/auth/membership-guard';
 import { aiLimiter } from '@/lib/ratelimit';
 import {
     AI_REQUEST_MAX_BYTES,
@@ -370,20 +374,15 @@ export async function POST(req: Request) {
         let classroomIdValue: number | null = null;
 
         if (classroomId !== undefined && classroomId !== null) {
-            const parsedClassroomId =
-                typeof classroomId === 'string' || typeof classroomId === 'number'
-                    ? Number(classroomId)
-                    : Number.NaN;
-
-            if (!Number.isSafeInteger(parsedClassroomId) || parsedClassroomId <= 0) {
+            try {
+                classroomIdValue = parseClassroomId(classroomId);
+            } catch {
                 return jsonError(
                     'Invalid classroomId.',
                     422,
                     'INVALID_CLASSROOM_ID'
                 );
             }
-
-            classroomIdValue = parsedClassroomId;
         }
 
         if (classroomIdValue) {

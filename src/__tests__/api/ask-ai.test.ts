@@ -194,7 +194,7 @@ describe('Ask AI API Endpoint', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt: 'What is the speed of light?',
-                classroomId: '12abc',
+                classroomId: '1e2',
             }),
         });
 
