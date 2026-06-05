@@ -9,7 +9,7 @@ jobs:
     name: Build & Type Check
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_placeholder' }}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_YXJyaXZpbmctamF5LTcuY2xlcmsuYWNjb3VudHMuZGV2JA' }}
       CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY || 'sk_test_placeholder' }}
       DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgres://dummy:dummy@localhost/dummy' }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
