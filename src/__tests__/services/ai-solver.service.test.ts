@@ -45,7 +45,7 @@ describe("AI Solver Service", () => {
                 fullName: "Test Student",
                 prompt: "What is 2+2?",
                 type: "standard",
-                imageBase64: null,
+                imageBase64: undefined,
                 classroomId: null,
                 history: []
             };

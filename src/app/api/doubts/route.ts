@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
 import { db } from "@/configs/db";
-import { membershipsTable } from "@/configs/schema";
-import { eq, and } from "drizzle-orm";
 import { buildErrorResponse } from "@/lib/error-handler";
 import { parseAndValidateRequest } from "@/lib/validations/validate";
 import { createDoubtSchema } from "@/lib/validations/doubt";
 import { getDoubts, createDoubt } from "@/services/doubt.service";
+import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -14,7 +12,6 @@ export async function GET(req: Request) {
     const search = searchParams.get("search");
     const userName = searchParams.get("userName");
     const classroomIdStr = searchParams.get("classroomId");
-    const classroomId = classroomIdStr ? parseInt(classroomIdStr, 10) : null;
     const type = searchParams.get("type") || "community";
     const tag = searchParams.get("tag");
     const sort = searchParams.get("sort") || "newest";
@@ -26,9 +23,8 @@ export async function GET(req: Request) {
 
     try {
         const user = await currentUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        const email = user.primaryEmailAddress?.emailAddress;
-        if (!email) return NextResponse.json({ error: "Email target missing" }, { status: 400 });
+        const email = user?.primaryEmailAddress?.emailAddress ?? null;
+        const classroomId = classroomIdStr ? parseInt(classroomIdStr) : null;
 
         const doubts = await getDoubts(db, {
             email,
@@ -57,10 +53,11 @@ export async function POST(req: Request) {
         if (errorResponse) return errorResponse;
         
         const user = await currentUser();
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const email = user?.primaryEmailAddress?.emailAddress;
 
-        const email = user.primaryEmailAddress?.emailAddress;
-        if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 });
+        if (!email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
 
         const parsedClassroomId = data.classroomId ? parseInt(data.classroomId.toString(), 10) : null;
 
@@ -81,4 +78,3 @@ export async function POST(req: Request) {
         return NextResponse.json(body, { status });
     }
 }
-

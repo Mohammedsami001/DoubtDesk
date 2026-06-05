@@ -1,24 +1,15 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/configs/db';
-import { currentUser } from '@clerk/nextjs/server';
-import { buildErrorResponse } from "@/lib/error-handler";
+import { buildErrorResponse } from '@/lib/error-handler';
+import { parseOptionalClassroomId, requireAuth } from '@/lib/auth/membership-guard';
 import { getDashboardAnalytics } from "@/services/analytics.service";
 
 export async function GET(req: Request) {
     try {
+        const { email } = await requireAuth();
+
         const { searchParams } = new URL(req.url);
-        const classroomIdStr = searchParams.get("classroomId");
-        const classroomId = classroomIdStr ? parseInt(classroomIdStr, 10) : null;
-
-        const user = await currentUser();
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const email = user.primaryEmailAddress?.emailAddress;
-        if (!email) {
-            return NextResponse.json({ error: "Email target missing" }, { status: 400 });
-        }
+        const classroomId = parseOptionalClassroomId(searchParams.get("classroomId"));
 
         const analytics = await getDashboardAnalytics(db, {
             email,
@@ -26,7 +17,7 @@ export async function GET(req: Request) {
         });
 
         return NextResponse.json(analytics);
-    } catch (error) {
+    } catch (error: unknown) {
         const { status, body } = buildErrorResponse(error);
         return NextResponse.json(body, { status });
     }

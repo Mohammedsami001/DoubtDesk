@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/configs/db';
 import { membershipsTable } from '@/configs/schema';
-import { eq, and, count } from 'drizzle-orm';
-import { currentUser } from '@clerk/nextjs/server';
+import { eq, count } from 'drizzle-orm';
 import { checkUserBlock } from '@/lib/auth-utils';
 import { buildErrorResponse } from '@/lib/error-handler';
+import {
+    parseClassroomId,
+    requireAuth,
+    requireMembership,
+} from '@/lib/auth/membership-guard';
 
 const PRIVILEGED_MEMBER_ROLES = new Set(['teacher', 'admin']);
 
@@ -14,12 +18,7 @@ function canViewMemberEmails(role: string) {
 
 export async function GET(req: Request) {
     try {
-        const user = await currentUser();
-        if (!user || !user.primaryEmailAddress?.emailAddress) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const email = user.primaryEmailAddress.emailAddress;
+        const { email } = await requireAuth();
 
         // 0. Check if user is blocked
         const { isBlocked, errorResponse } = await checkUserBlock(email);
@@ -31,25 +30,12 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: 'Classroom ID is required' }, { status: 400 });
         }
 
-        const classroomId = Number(classroomIdStr);
+        const classroomId = parseClassroomId(classroomIdStr);
         const page = Math.max(Number(searchParams.get('page')) || 1, 1);
         const limit = Math.min(Math.max(Number(searchParams.get('limit')) || 20, 1), 100);
         const offset = (page - 1) * limit;
         
-        // Security: Check if requesting user is a member of this classroom
-       const [membership] = await db
-            .select()
-            .from(membershipsTable)
-            .where(
-                and(
-                    eq(membershipsTable.userEmail, email),
-                    eq(membershipsTable.classroomId, classroomId)
-                )
-            );
-
-        if (!membership) {
-            return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-        }
+        const membership = await requireMembership(email, classroomId);
 
         // Total members count
         const totalMembersResult = await db
@@ -73,19 +59,21 @@ export async function GET(req: Request) {
             .limit(limit)
             .offset(offset);
 
-        let safeMembers;
-        if (canViewMemberEmails(membership.role)) {
-            safeMembers = members.map(({ id, ...member }) => member);
-        } else {
-            safeMembers = members.map((member) => ({
-                displayName: `${member.role === 'student' ? 'Student' : 'Member'}_${member.id}`,
+        const canViewEmails = ["teacher", "owner", "admin"].includes(membership.role);
+        const visibleMembers = canViewEmails
+            ? members.map((member) => ({
+                userEmail: member.userEmail,
+                role: member.role,
+                joinedAt: member.joinedAt,
+            }))
+            : members.map((member, index) => ({
+                displayName: `Student_${offset + index + 1}`,
                 role: member.role,
                 joinedAt: member.joinedAt,
             }));
-        }
 
         return NextResponse.json({
-            members: safeMembers,
+            members: visibleMembers,
             pagination: {
                 total,
                 page,

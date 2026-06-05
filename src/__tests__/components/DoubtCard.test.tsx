@@ -28,7 +28,9 @@ const mockDoubt = {
     createdAt: new Date().toISOString(),
     likes: 5,
     replyCount: 2,
-    isSolved: 'unsolved',
+    isSolved: 'unsolved' as any,
+            type: 'community' as any,
+            isPinned: false,
 };
 
 describe('DoubtCard Component', () => {

@@ -12,7 +12,7 @@ import {
 import { and, eq, inArray, isNull, or, not, sql, SQL, ilike, desc, getTableColumns } from "drizzle-orm";
 
 export interface GetDoubtsParams {
-    email: string;
+    email: string | null;
     subject?: string | null;
     search?: string | null;
     userName?: string | null;
@@ -46,7 +46,7 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
         const [membership] = await db
             .select()
             .from(membershipsTable)
-            .where(and(eq(membershipsTable.userEmail, email), eq(membershipsTable.classroomId, classroomId)));
+            .where(and(eq(membershipsTable.userEmail, email as string), eq(membershipsTable.classroomId, classroomId)));
         if (!membership) {
             throw new ServiceError(403, "Access denied to this classroom");
         }
@@ -66,7 +66,7 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
     const isTeacher = room && room.teacherEmail === email;
 
     if (!isTeacher) {
-        const teacherCondition = or(not(eq(doubtsTable.type, "teacher")), eq(doubtsTable.userEmail, email));
+        const teacherCondition = or(not(eq(doubtsTable.type, "teacher")), eq(doubtsTable.userEmail, email as string));
         if (teacherCondition) conditions.push(teacherCondition);
     }
 
@@ -86,7 +86,7 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
     if (type && type !== "All") {
         conditions.push(eq(doubtsTable.type, type));
         if (type === "ai") {
-            conditions.push(eq(doubtsTable.userEmail, email));
+            conditions.push(eq(doubtsTable.userEmail, email as string));
         }
     }
 
@@ -94,7 +94,7 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
         const userBookmarks = await db
             .select({ doubtId: bookmarksTable.doubtId })
             .from(bookmarksTable)
-            .where(eq(bookmarksTable.userEmail, email));
+            .where(eq(bookmarksTable.userEmail, email as string));
         const bookmarkedIds = userBookmarks.map((b: any) => b.doubtId);
         if (bookmarkedIds.length > 0) {
             conditions.push(inArray(doubtsTable.id, bookmarkedIds));
@@ -162,7 +162,7 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
         const userBookmarks = await db
             .select({ doubtId: bookmarksTable.doubtId })
             .from(bookmarksTable)
-            .where(eq(bookmarksTable.userEmail, email));
+            .where(eq(bookmarksTable.userEmail, email as string));
 
         const bookmarkedIds = new Set(userBookmarks.map((b: any) => b.doubtId));
         doubts = doubts.map((doubt: any) => ({
@@ -230,7 +230,7 @@ export async function createDoubt(db: any, params: CreateDoubtParams) {
         const [membership] = await db
             .select()
             .from(membershipsTable)
-            .where(and(eq(membershipsTable.userEmail, email), eq(membershipsTable.classroomId, classroomId)));
+            .where(and(eq(membershipsTable.userEmail, email as string), eq(membershipsTable.classroomId, classroomId)));
         if (!membership) {
             throw new ServiceError(403, "Access denied: You are not a member of this classroom");
         }
@@ -297,7 +297,7 @@ export async function createDoubt(db: any, params: CreateDoubtParams) {
                 )
             );
 
-        const existingTagsMap = new Map(existingClassroomTags.map((t: any) => [t.normalizedName, t]));
+        const existingTagsMap = new Map<string, typeof tagsTable.$inferSelect>(existingClassroomTags.map((t: any) => [t.normalizedName, t]));
         const tagsToInsert: (typeof tagsTable.$inferInsert)[] = [];
 
         for (const name of normalizedTags) {
