@@ -27,7 +27,7 @@ describe('getDatabaseUrl', () => {
 
         const { getDatabaseUrl } = require('@/configs/database-url');
 
-        expect(getDatabaseUrl()).toBe('postgresql://dummy:dummy@localhost/dummy');
+        expect(getDatabaseUrl()).toBe('postgres://dummy:dummy@localhost/dummy');
     });
 
     it('returns a trimmed DATABASE_URL when configured', () => {
@@ -44,7 +44,7 @@ describe('getDatabaseUrl', () => {
 
         const { getDatabaseUrl } = require('@/configs/database-url');
 
-        expect(getDatabaseUrl()).toBe('postgresql://dummy:dummy@localhost/dummy');
+        expect(getDatabaseUrl()).toBe('postgres://dummy:dummy@localhost/dummy');
     });
 });
 
