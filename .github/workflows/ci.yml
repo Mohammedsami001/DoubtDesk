@@ -108,15 +108,15 @@ jobs:
         id: scan
         run: |
           FOUND_ISSUES=0
-          if git diff origin/main...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -iE "(password|secret|api_key|apikey|token)\s*=\s*['\"][^'\"]{8,}" ; then
+          if git diff origin/main...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep "^+" | grep -v "^+++" | grep -iE "(password|secret|api_key|apikey|token)\s*=\s*['\"][^'\"]{8,}" ; then
             echo "::error title=Security Issue::Possible hardcoded secret detected"
             FOUND_ISSUES=1
           fi
-          if git diff origin/main...HEAD | grep -iE "NEXT_PUBLIC_(DATABASE_URL|SECRET|PASSWORD|PRIVATE)" ; then
+          if git diff origin/main...HEAD | grep "^+" | grep -v "^+++" | grep -iE "NEXT_PUBLIC_(DATABASE_URL|SECRET|PASSWORD|PRIVATE)" ; then
             echo "::error title=Security Issue::Sensitive variable exposed via NEXT_PUBLIC_ prefix"
             FOUND_ISSUES=1
           fi
-          if git diff origin/main...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -iE "console\.(log|error)\(.*?(password|token|secret|key)" ; then
+          if git diff origin/main...HEAD -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep "^+" | grep -v "^+++" | grep -iE "console\.(log|error)\(.*?(password|token|secret|key)" ; then
             echo "::error title=Security Issue::Possible sensitive data in console output"
             FOUND_ISSUES=1
           fi
