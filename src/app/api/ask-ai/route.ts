@@ -13,6 +13,10 @@ import {
 } from '@/lib/auth/membership-guard';
 import { aiLimiter } from '@/lib/ratelimit';
 import {
+    buildAiProviderErrorResponse,
+    enforceAiAvailability,
+} from '@/lib/ai/kill-switch';
+import {
     AI_REQUEST_MAX_BYTES,
     AI_REQUEST_MAX_SIZE_LABEL,
     validateAiImageDataUrl,
@@ -453,6 +457,9 @@ export async function POST(req: Request) {
             }
         }
 
+        const availabilityResponse = await enforceAiAvailability(email);
+        if (availabilityResponse) return availabilityResponse;
+
         // 1. AI Moderation Check for Prompts
         if (prompt) {
             const moderation =
@@ -603,13 +610,17 @@ ${prompt ? `Additional context from student: ${prompt}` : ''}`;
             });
         }
 
-        const {
-            completion,
-            modelUsed,
-        } = await callGroqWithFallback(
-            messages,
-            isVisionRequest
-        );
+        let completion: Awaited<ReturnType<typeof callGroqWithFallback>>["completion"];
+        let modelUsed: Awaited<ReturnType<typeof callGroqWithFallback>>["modelUsed"];
+
+        try {
+            ({ completion, modelUsed } = await callGroqWithFallback(
+                messages,
+                isVisionRequest
+            ));
+        } catch (providerError: unknown) {
+            return buildAiProviderErrorResponse(providerError);
+        }
 
         let reply =
             completion.choices[0]?.message?.content ||
