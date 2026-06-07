@@ -8,6 +8,7 @@ import {
   enforceAiAvailability,
 } from "@/lib/ai/kill-switch";
 import { buildErrorResponse } from "@/lib/error-handler";
+import { getAnonymousQuotaIdentifier } from "@/lib/request-identity";
 import {
   parseOptionalClassroomId,
   requireAuth,
@@ -35,10 +36,7 @@ export async function POST(req: Request) {
       classroomId?: unknown;
     };
     const classroomId = parseOptionalClassroomId(rawClassroomId);
-    let aiQuotaIdentifier =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip")?.trim() ||
-      "anonymous";
+    let aiQuotaIdentifier = getAnonymousQuotaIdentifier(req);
 
     if (classroomId) {
       const { email } = await requireAuth();

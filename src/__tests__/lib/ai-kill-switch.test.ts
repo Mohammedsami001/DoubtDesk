@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import {
   buildAiProviderErrorResponse,
   enforceAiAvailability,
@@ -48,13 +50,16 @@ describe("AI availability controls", () => {
     });
   });
 
-  it("uses a normalized per-user daily quota key", async () => {
+  it("uses a normalized, hashed per-user daily quota key", async () => {
     await expect(
       enforceAiAvailability("  Student@Example.COM "),
     ).resolves.toBeNull();
 
+    const digest = createHash("sha256")
+      .update("student@example.com")
+      .digest("hex");
     expect(mockDailyLimit).toHaveBeenCalledWith(
-      "ai-daily:student@example.com",
+      `ai-daily:${digest}`,
     );
   });
 
@@ -74,6 +79,21 @@ describe("AI availability controls", () => {
       error: "Your daily AI request limit has been reached.",
       code: "AI_DAILY_LIMIT_REACHED",
     });
+  });
+
+  it("returns a retryable response when the quota backend fails", async () => {
+    mockDailyLimit.mockRejectedValueOnce(new Error("redis unavailable"));
+    const consoleError = jest.spyOn(console, "error").mockImplementation();
+
+    const response = await enforceAiAvailability("student@example.com");
+
+    expect(response?.status).toBe(503);
+    expect(response?.headers.get("Retry-After")).toBe("60");
+    await expect(response?.json()).resolves.toEqual({
+      error: "AI features are temporarily unavailable.",
+      code: "AI_QUOTA_UNAVAILABLE",
+    });
+    consoleError.mockRestore();
   });
 
   it("maps transient provider failures to a graceful 503", async () => {

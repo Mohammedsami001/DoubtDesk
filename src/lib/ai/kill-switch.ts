@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { aiDailyLimiter } from "@/lib/ratelimit";
@@ -13,6 +14,12 @@ function isAiEnabled(): boolean {
   // Read on every request so runtime environment changes are not module-cached.
   const configuredValue = process.env.AI_ENABLED?.trim().toLowerCase();
   return !["false", "0", "off"].includes(configuredValue || "");
+}
+
+function buildQuotaKey(identifier: string): string {
+  const normalized = identifier.trim().toLowerCase();
+  const digest = createHash("sha256").update(normalized).digest("hex");
+  return `ai-daily:${digest}`;
 }
 
 function getProviderStatus(error: unknown): number | undefined {
@@ -68,9 +75,8 @@ export async function enforceAiAvailability(identifier: string) {
   }
 
   try {
-    const { success, limit, remaining, reset } = await aiDailyLimiter.limit(
-      `ai-daily:${identifier.trim().toLowerCase()}`,
-    );
+    const { success, limit, remaining, reset } =
+      await aiDailyLimiter.limit(buildQuotaKey(identifier));
 
     if (success) {
       return null;
@@ -101,7 +107,12 @@ export async function enforceAiAvailability(identifier: string) {
         error: "AI features are temporarily unavailable.",
         code: "AI_QUOTA_UNAVAILABLE",
       },
-      { status: 503 },
+      {
+        status: 503,
+        headers: {
+          "Retry-After": "60",
+        },
+      },
     );
   }
 }

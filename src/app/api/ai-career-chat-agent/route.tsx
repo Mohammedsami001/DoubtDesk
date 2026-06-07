@@ -7,6 +7,24 @@ import {
     enforceAiAvailability,
 } from "@/lib/ai/kill-switch";
 
+function getSafeErrorDetails(error: unknown) {
+    if (typeof error !== "object" || error === null) {
+        return { message: String(error) };
+    }
+
+    const candidate = error as {
+        message?: unknown;
+        status?: unknown;
+        code?: unknown;
+    };
+
+    return {
+        message: typeof candidate.message === "string" ? candidate.message : undefined,
+        status: typeof candidate.status === "number" ? candidate.status : undefined,
+        code: typeof candidate.code === "string" ? candidate.code : undefined,
+    };
+}
+
 export async function POST(req: NextRequest) {
     try {
         const user = await currentUser();
@@ -24,7 +42,15 @@ export async function POST(req: NextRequest) {
 
         let body: { userInput?: unknown };
         try {
-            body = await req.json();
+            const parsed = await req.json();
+            if (
+                typeof parsed !== "object" ||
+                parsed === null ||
+                Array.isArray(parsed)
+            ) {
+                return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+            }
+            body = parsed as { userInput?: unknown };
         } catch {
             return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
         }
@@ -110,6 +136,7 @@ Always focus on helping the user move one step closer to their career goal.
                         "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
                         "Content-Type": "application/json",
                     },
+                    timeout: 15_000,
                 }
             );
 
@@ -117,11 +144,11 @@ Always focus on helping the user move one step closer to their career goal.
 
             return NextResponse.json({ output: aiResponse });
         } catch (error: unknown) {
-            console.error("AI Career Chat Provider Error:", error);
+            console.error("AI Career Chat Provider Error:", getSafeErrorDetails(error));
             return buildAiProviderErrorResponse(error);
         }
     } catch (error: unknown) {
-        console.error("AI Career Chat Error:", error);
+        console.error("AI Career Chat Error:", getSafeErrorDetails(error));
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

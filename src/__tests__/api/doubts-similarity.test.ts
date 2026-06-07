@@ -1,6 +1,7 @@
 import { currentUser } from "@clerk/nextjs/server";
 
 import { POST } from "@/app/api/doubts/check-similarity/route";
+import { getAnonymousQuotaIdentifier } from "@/lib/request-identity";
 
 jest.mock("@clerk/nextjs/server", () => ({
   currentUser: jest.fn(),
@@ -66,6 +67,25 @@ describe("Doubt similarity API endpoint", () => {
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ similarDoubts: [] });
     expect(currentUserMock).not.toHaveBeenCalled();
+  });
+
+  it("ignores spoofable forwarded IP values for anonymous quota keys", () => {
+    const req = new Request("http://localhost/api/doubts/check-similarity", {
+      headers: { "x-forwarded-for": "203.0.113.1" },
+    });
+
+    expect(getAnonymousQuotaIdentifier(req)).toBe("anonymous");
+  });
+
+  it("uses a validated trusted proxy IP for anonymous quota keys", () => {
+    const req = new Request("http://localhost/api/doubts/check-similarity", {
+      headers: {
+        "x-forwarded-for": "spoofed",
+        "x-real-ip": "203.0.113.7",
+      },
+    });
+
+    expect(getAnonymousQuotaIdentifier(req)).toBe("ip:203.0.113.7");
   });
 
   it("requires authentication for classroom similarity checks", async () => {
