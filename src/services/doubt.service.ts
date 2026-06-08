@@ -42,17 +42,20 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
 
     const offset = (page - 1) * limit;
 
+    let isTeacher = false;
+    
     if (classroomId) {
         const [membership] = await db
             .select()
             .from(membershipsTable)
             .where(and(eq(membershipsTable.userEmail, email as string), eq(membershipsTable.classroomId, classroomId)));
         if (!membership) {
-            throw new ServiceError(403, "Access denied to this classroom");
+            throw new ServiceError(403, "Access denied");
         }
+        isTeacher = membership.role === 'teacher' || membership.role === 'admin'; // Equivalent to canTeach
     }
 
-    const conditions: SQL[] = [];
+    const conditions: SQL[] = [isNull(doubtsTable.deletedAt)];
 
     if (classroomId) {
         conditions.push(eq(doubtsTable.classroomId, classroomId));
@@ -60,13 +63,10 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
         conditions.push(isNull(doubtsTable.classroomId));
     }
 
-    const [room] = classroomId
-        ? await db.select().from(classroomsTable).where(eq(classroomsTable.id, classroomId))
-        : [null];
-    const isTeacher = room && room.teacherEmail === email;
-
     if (!isTeacher) {
-        const teacherCondition = or(not(eq(doubtsTable.type, "teacher")), eq(doubtsTable.userEmail, email as string));
+        const teacherCondition = email 
+            ? or(not(eq(doubtsTable.type, "teacher")), eq(doubtsTable.userEmail, email as string))
+            : not(eq(doubtsTable.type, "teacher"));
         if (teacherCondition) conditions.push(teacherCondition);
     }
 
@@ -122,6 +122,12 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
     }
 
     const replyCountSql = sql<number>`coalesce((SELECT count(*)::int FROM ${repliesTable} WHERE ${repliesTable.doubtId} = ${doubtsTable.id}), 0)`.mapWith(Number);
+
+    const [totalCountRow] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(doubtsTable)
+        .where(and(...conditions));
+    const totalCount = totalCountRow?.count ?? 0;
 
     const query = db
         .select({
@@ -193,7 +199,9 @@ export async function getDoubts(db: any, params: GetDoubtsParams) {
         }));
     }
 
-    return doubts;
+    const hasMore = offset + doubts.length < totalCount;
+
+    return { doubts, totalCount, hasMore, page, limit };
 }
 
 import { categorizeDoubt } from "@/lib/ai/categorizer";

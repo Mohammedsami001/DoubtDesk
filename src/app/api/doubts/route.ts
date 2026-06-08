@@ -5,6 +5,7 @@ import { parseAndValidateRequest } from "@/lib/validations/validate";
 import { createDoubtSchema } from "@/lib/validations/doubt";
 import { getDoubts, createDoubt } from "@/services/doubt.service";
 import { currentUser } from "@clerk/nextjs/server";
+import { parsePositiveInt } from "@/lib/utils";
 
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
@@ -17,9 +18,14 @@ export async function GET(req: Request) {
     const sort = searchParams.get("sort") || "newest";
     const bookmarked = searchParams.get("bookmarked") === "true";
     const pageStr = searchParams.get("page");
+    const offsetStr = searchParams.get("offset");
     const limitStr = searchParams.get("limit");
-    const page = pageStr ? parseInt(pageStr, 10) : 1;
-    const limit = limitStr ? parseInt(limitStr, 10) : 20;
+    
+    const limit = parsePositiveInt(limitStr, 20);
+    const offset = offsetStr
+        ? parsePositiveInt(offsetStr, 0)
+        : (pageStr ? (parsePositiveInt(pageStr, 1) - 1) * limit : 0);
+    const page = Math.floor(offset / limit) + 1;
 
     try {
         const user = await currentUser();
@@ -36,7 +42,7 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const doubts = await getDoubts(db, {
+        const { doubts, totalCount, hasMore } = await getDoubts(db, {
             email,
             subject,
             search,
@@ -50,7 +56,13 @@ export async function GET(req: Request) {
             limit
         });
 
-        return NextResponse.json(doubts);
+        return NextResponse.json({
+            doubts,
+            hasMore,
+            totalCount,
+            page,
+            limit
+        });
     } catch (error) {
         const { status, body } = buildErrorResponse(error);
         return NextResponse.json(body, { status });

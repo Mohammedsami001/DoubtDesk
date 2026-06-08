@@ -30,8 +30,8 @@ describe("Doubt Service", () => {
 
             const result = await getDoubts(mockDb, params);
 
-            expect(result).toHaveLength(1);
-            expect(result[0].subject).toBe("Math");
+            expect(result.doubts).toHaveLength(1);
+            expect(result.doubts[0].subject).toBe("Math");
         });
     });
 });

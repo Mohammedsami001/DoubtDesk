@@ -1,6 +1,6 @@
 {
-  "id": "fc5bf51e-d194-4863-9c4a-5aa35107d388",
-  "prevId": "9f86cf62-820f-42e3-b8fd-10b031bc32fa",
+  "id": "a7b798ab-2758-42f4-ba71-70680d5a38c1",
+  "prevId": "fc5bf51e-d194-4863-9c4a-5aa35107d388",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1026,6 +1026,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": false
+        },
+        "deletedAt": {
+          "name": "deletedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "createdAt": {
           "name": "createdAt",

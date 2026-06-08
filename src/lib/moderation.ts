@@ -252,6 +252,7 @@ export async function moderateContent(
                 isAllowed: z.any().transform((val) => val === true || String(val).toLowerCase() === 'true'),
                 reason: z.any().transform((val) => val ? String(val) : "Content looks good"),
                 violationType: z.any().optional().transform((val) => {
+                    if (!val) return undefined;
                     const v = String(val).toLowerCase();
                     if (v === 'abusive' || v === 'off-topic' || v === 'spam' || v === 'other') {
                         return v as 'abusive' | 'off-topic' | 'spam' | 'other';
