@@ -58,15 +58,18 @@ export async function GET(req: Request) {
         }
 
         if (doubt.type === 'teacher') {
+            if (!doubt.classroomId) {
+                return errorResponse("Access denied", 403);
+            }
             const [membership] = await db
-            .select()
-            .from(membershipsTable)
-            .where(
-                and(
-                    eq(membershipsTable.userEmail, email as string),
-                    eq(membershipsTable.classroomId, doubt.classroomId!)
-                )
-            );
+                .select()
+                .from(membershipsTable)
+                .where(
+                    and(
+                        eq(membershipsTable.userEmail, email as string),
+                        eq(membershipsTable.classroomId, doubt.classroomId)
+                    )
+                );
 
                 const isTeacher = membership ? canTeach(membership.role) : false;
                 const isOwner = doubt.userEmail === email;
